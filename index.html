@@ -1097,23 +1097,21 @@ function toast(msg, type = '') {
 const BUILTIN_CHALLENGES = [{"id": "ch_4_builtin", "name": "Challenge #4", "records": [{"email": "vazquezz.m1407@gmail.com", "tracking": "6101200308876480", "name": ""}, {"email": "luciabracamonte11@gmail.com", "tracking": "6101010308869480", "name": ""}, {"email": "filigreefall@gmail.com", "tracking": "6101120308813680", "name": ""}, {"email": "rutholutunmise@gmail.com", "tracking": "6101200308886380", "name": ""}, {"email": "fatimaescobar73@gmail.com", "tracking": "6101010308850680", "name": ""}, {"email": "ana.loran@icloud.com", "tracking": "6101200308894180", "name": ""}, {"email": "sophie.tsivtsivadze@gmail.com", "tracking": "6101180308844480", "name": ""}, {"email": "askmims1@gmail.com", "tracking": "6101170308838480", "name": ""}, {"email": "ramirezjeccira@gmail.com", "tracking": "6101150308862580", "name": ""}, {"email": "aidacanetti@gmail.com", "tracking": "6101140308833380", "name": ""}, {"email": "mrosariovaldez55@gmail.com", "tracking": "6101190308899780", "name": ""}, {"email": "mellissaj44@gmail.com", "tracking": "6101150308861880", "name": ""}, {"email": "dreamsy66@gmail.com", "tracking": "6101160308833780", "name": ""}, {"email": "katedove1@icloud.com", "tracking": "6101160308833080", "name": ""}, {"email": "chezzlaura.collab@gmail.com", "tracking": "6101150308855980", "name": ""}, {"email": "byvalentinabeaut@gmail.com", "tracking": "6101190308905980", "name": ""}, {"email": "glowithsarahlee@gmail.com", "tracking": "6101160308845780", "name": ""}, {"email": "collabswithfathia@gmail.com", "tracking": "6101170308841080", "name": ""}, {"email": "makeupbyalissaskye@gmail.com", "tracking": "6101160308815380", "name": ""}, {"email": "fatimadugc@gmail.com", "tracking": "6101200308884480", "name": ""}, {"email": "whtevrxgen@gmail.com", "tracking": "6101120308799480", "name": ""}, {"email": "shantalhvs95@outlook.com", "tracking": "6101150308849580", "name": ""}, {"email": "contact.nataliawolf@gmail.com", "tracking": "6101160309263080", "name": ""}]}];
 
 // ========== INIT ==========
-// Clear old default/bad challenges from localStorage
+// Clear ALL built-in challenges from localStorage (they live in code, not storage)
 try {
   const stored = localStorage.getItem('nuriglow_challenges');
   if (stored) {
     const parsed = JSON.parse(stored);
-    const filtered = parsed.filter(c => !c.id.startsWith('ch_4_default') && !c.id.startsWith('ch_5_default'));
+    const builtinIds = BUILTIN_CHALLENGES.map(c => c.id);
+    const filtered = parsed.filter(c => !builtinIds.includes(c.id) && !c.id.startsWith('ch_4_default') && !c.id.startsWith('ch_5_default'));
     localStorage.setItem('nuriglow_challenges', JSON.stringify(filtered));
   }
 } catch(e) {}
 load();
 
-// Merge built-in challenges (always present, not editable by users)
-// Admin-uploaded challenges are added on top
+// Merge built-in challenges at the front (always present, not stored in localStorage)
 BUILTIN_CHALLENGES.forEach(builtin => {
-  if (!state.challenges.find(c => c.id === builtin.id)) {
-    state.challenges.unshift(builtin);
-  }
+  state.challenges.unshift(builtin);
 });
 
 renderCreatorTabs();
