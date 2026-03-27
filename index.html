@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuriglow · Tracking Number Lookup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --warm-white: #F5F0E8;
+    --gold: #C9A96E;
+    --gold-light: #E8D5B0;
+    --dark: #1A1714;
+    --mid: #4A4540;
+    --light-mid: #8A837A;
+    --border: rgba(201,169,110,0.25);
+    --shadow: 0 8px 48px rgba(26,23,20,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(250,247,242,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px;
+    height: 72px;
+  }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  .nav-logo img {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold-light);
+  }
+
+  .nav-logo-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--dark);
+  }
+
+  .nav-right {
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .nav-btn {
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--mid);
+  }
+  .nav-btn-ghost:hover { border-color: var(--gold); color: var(--dark); background: rgba(201,169,110,0.06); }
+
+  .nav-btn-gold {
+    background: var(--gold);
+    border: 1px solid var(--gold);
+    color: white;
+  }
+  .nav-btn-gold:hover { background: #B8955A; }
+
+  /* PAGES */
+  .page { display: none; padding-top: 72px; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* ======== CREATOR PAGE ======== */
+  .hero {
+    min-height: calc(100vh - 72px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    padding: 60px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(201,169,110,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(201,169,110,0.1);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 18px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .hero-badge span { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; display: block; animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    text-align: center;
+    color: var(--dark);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: 0.95rem;
+    color: var(--light-mid);
+    text-align: center;
+    margin-bottom: 56px;
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 400px;
+  }
+
+  /* SEARCH CARD */
+  .search-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: var(--shadow);
+    position: relative;
+    z-index: 1;
+  }
+
+  .search-card h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--dark);
+  }
+
+  .search-card p {
+    font-size: 0.85rem;
+    color: var(--light-mid);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .challenge-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+
+  .challenge-tab {
+    padding: 8px 18px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: var(--light-mid);
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .challenge-tab:hover { border-color: var(--gold); color: var(--dark); }
+  .challenge-tab.active { background: var(--gold); border-color: var(--gold); color: white; }
+
+  .input-group {
+    position: relative; margin-bottom: 16px;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--mid);
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .input-group input {
+    width: 100%;
+    padding: 14px 20px;
+    border: 1.5px solid #E8E2D8;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    color: var(--dark);
+    background: var(--warm-white);
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .input-group input:focus {
+    border-color: var(--gold);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(201,169,110,0.1);
+  }
+
+  .input-group input::placeholder { color: #C0B8AF; }
+
+  .search-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--dark);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    margin-top: 4px;
+  }
+
+  .search-btn:hover { background: var(--mid); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(26,23,20,0.15); }
+  .search-btn:active { transform: translateY(0); }
+
+  /* RESULT */
+  .result-area { margin-top: 24px; }
+
+  .result-card {
+    background: linear-gradient(135deg, #1A1714 0%, #2C2722 100%);
+    border-radius: 16px;
+    padding: 28px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(201,169,110,0.3) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .result-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .result-challenge {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 20px;
+  }
+
+  .result-tracking {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: white;
+    word-break: break-all;
+  }
+
+  .result-name {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .result-name strong { color: rgba(255,255,255,0.85); font-weight: 400; }
+
+  .error-msg {
+    background: rgba(200,80,60,0.08);
+    border: 1px solid rgba(200,80,60,0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 0.85rem;
+    color: #C8503C;
+    animation: slideUp 0.3s ease;
+    line-height: 1.5;
+  }
+
+  .no-data-msg {
+    background: rgba(201,169,110,0.06);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--light-mid);
+    line-height: 1.6;
+  }
+
+  /* ======== ADMIN PAGE ======== */
+  .admin-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+
+  .admin-header {
+    margin-bottom: 48px;
+  }
+
+  .admin-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    font-weight: 400;
+    color: var(--dark);
+    margin-bottom: 8px;
+  }
+
+  .admin-header p {
+    font-size: 0.88rem;
+    color: var(--light-mid);
+  }
+
+  /* LOGIN */
+  .login-wrap {
+    min-height: calc(100vh - 72px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 24px;
+  }
+
+  .login-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 56px 48px;
+    width: 100%; max-width: 420px;
+    box-shadow: var(--shadow);
+  }
+
+  .login-card .logo-area {
+    display: flex; flex-direction: column; align-items: center; margin-bottom: 40px;
+  }
+
+  .login-card .logo-area img {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid var(--gold-light); margin-bottom: 16px;
+    object-fit: cover;
+  }
+
+  .login-card h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem; font-weight: 500;
+    color: var(--dark); margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .login-card p {
+    font-size: 0.82rem; color: var(--light-mid);
+    text-align: center; line-height: 1.5;
+  }
+
+  /* SECTION CARDS */
+  .section-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 16px rgba(26,23,20,0.04);
+  }
+
+  .section-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; font-weight: 500;
+    color: var(--dark); margin-bottom: 6px;
+  }
+
+  .section-card .section-desc {
+    font-size: 0.82rem; color: var(--light-mid);
+    margin-bottom: 28px; line-height: 1.6;
+  }
+
+  /* UPLOAD */
+  .upload-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+
+  .upload-row .input-group { flex: 1; min-width: 200px; margin-bottom: 0; }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--warm-white);
+    margin-bottom: 20px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--gold);
+    background: rgba(201,169,110,0.05);
+  }
+
+  .drop-zone-icon { font-size: 2rem; margin-bottom: 10px; }
+
+  .drop-zone p { font-size: 0.88rem; color: var(--light-mid); line-height: 1.5; }
+  .drop-zone p strong { color: var(--dark); font-weight: 500; }
+
+  .file-input { display: none; }
+
+  /* CHALLENGE LIST */
+  .challenge-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .challenge-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--warm-white);
+    transition: all 0.2s;
+  }
+
+  .challenge-item:hover { border-color: var(--gold-light); }
+
+  .challenge-item-left { display: flex; align-items: center; gap: 14px; }
+
+  .ch-badge {
+    background: var(--dark); color: white;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.8rem; font-weight: 600;
+    padding: 4px 12px; border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .ch-info h4 { font-size: 0.9rem; font-weight: 500; color: var(--dark); }
+  .ch-info p { font-size: 0.78rem; color: var(--light-mid); margin-top: 2px; }
+
+  .ch-delete {
+    background: none; border: 1px solid #E8E2D8;
+    color: var(--light-mid);
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 0.78rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  }
+
+  .ch-delete:hover { border-color: #C8503C; color: #C8503C; background: rgba(200,80,60,0.05); }
+
+  /* PASSWORD CHANGE */
+  .pw-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .pw-row .input-group { flex: 1; min-width: 150px; margin-bottom: 0; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--dark); color: white;
+    padding: 13px 24px; border-radius: 100px;
+    font-size: 0.85rem; font-weight: 400;
+    z-index: 9999; transition: transform 0.3s ease;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #2C5F3F; }
+  .toast.error { background: #7A2020; }
+
+  /* GOLD BTN */
+  .btn-gold {
+    background: var(--gold); border: none;
+    color: white; padding: 13px 28px;
+    border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .btn-gold:hover { background: #B8955A; transform: translateY(-1px); }
+
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--mid); padding: 13px 24px;
+    border-radius: 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--dark); }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 3px; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--light-mid); font-size: 0.88rem; line-height: 1.7;
+  }
+
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+
+  /* FILE TAG */
+  .file-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(201,169,110,0.1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    font-size: 0.82rem; color: var(--mid);
+    margin-bottom: 16px;
+  }
+
+  @media(max-width: 600px) {
+    nav { padding: 0 20px; }
+    .search-card { padding: 32px 24px; }
+    .login-card { padding: 40px 28px; }
+    .admin-wrap { padding: 40px 16px; }
+    .section-card { padding: 28px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <img id="nav-logo-img" src="" alt="Nuriglow">
+    <span class="nav-logo-text">Nuriglow</span>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn nav-btn-ghost" onclick="showPage('creator')">Tracking Lookup</button>
+    <button class="nav-btn nav-btn-gold" onclick="showAdmin()">관리자</button>
+  </div>
+</nav>
+
+<!-- CREATOR PAGE -->
+<div id="page-creator" class="page active">
+  <div class="hero">
+    <div class="hero-badge"><span></span> Creator Portal</div>
+    <h1>Track Your<br><em>Shipping Number</em></h1>
+    <p class="hero-sub">Enter your registered email address to find your tracking number from the Nuriglow Creator Challenge.</p>
+
+    <div class="search-card">
+      <h2>Find Your Tracking</h2>
+      <p>Select a challenge and enter your full email address to retrieve your tracking number.</p>
+
+      <div>
+        <div style="font-size:0.78rem;font-weight:500;color:var(--mid);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;">Select Challenge</div>
+        <div class="challenge-tabs" id="creator-tabs">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-top:20px">
+        <label>Email Address</label>
+        <input type="email" id="email-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')searchTracking()">
+      </div>
+
+      <button class="search-btn" onclick="searchTracking()">Search Tracking Number →</button>
+
+      <div class="result-area" id="result-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN PAGE -->
+<div id="page-admin-login" class="page">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo-area">
+        <img id="login-logo-img" src="" alt="Nuriglow">
+        <h2>관리자 로그인</h2>
+        <p>챌린지 데이터를 관리하려면 비밀번호를 입력하세요</p>
+      </div>
+      <div class="input-group">
+        <label>비밀번호</label>
+        <input type="password" id="admin-pw-input" placeholder="관리자 비밀번호 입력" onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <button class="btn-gold" style="width:100%;margin-top:8px" onclick="adminLogin()">로그인 →</button>
+      <div style="margin-top:12px;text-align:center">
+        <span id="login-hint" style="font-size:0.78rem;color:var(--light-mid)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD PAGE -->
+<div id="page-admin" class="page">
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <h1>관리자 대시보드</h1>
+      <p>챌린지 트랙킹 데이터 관리 · <span id="admin-data-summary" style="color:var(--gold)"></span></p>
+    </div>
+
+    <!-- UPLOAD NEW CHALLENGE -->
+    <div class="section-card">
+      <h3>새 챌린지 업로드</h3>
+      <p class="section-desc">크리에이터 이메일과 트랙킹 번호 컬럼이 포함된 엑셀 파일(.xlsx)을 업로드하세요. 입력한 챌린지 이름이 조회 탭에 표시됩니다.</p>
+
+      <div class="input-group" style="margin-bottom:20px">
+        <label>챌린지 이름</label>
+        <input type="text" id="challenge-name-input" placeholder="예: Challenge #6 — Summer Glow" style="background:white">
+      </div>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event)">
+        <div class="drop-zone-icon">📄</div>
+        <p><strong>클릭하여 업로드</strong>하거나 파일을 여기에 드래그 앤 드롭하세요</p>
+        <p style="margin-top:4px;font-size:0.78rem">.xlsx 파일만 지원</p>
+      </div>
+      <input type="file" id="file-input" class="file-input" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+
+      <div id="file-preview" style="display:none"></div>
+
+      <div id="col-mapper" style="display:none;margin-top:16px">
+        <div style="font-size:0.82rem;font-weight:500;color:var(--mid);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.04em;">컬럼 매핑</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div class="input-group" style="flex:1;min-width:180px;margin-bottom:0">
+            <label>이메일 컬럼</label>
+            <select id="email-col" style="width:100%;padding:13px 16px;border:1.5px solid #E8E2D8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;background:var(--warm-white);color:var(--dark);outline:none;cursor:pointer"></select>
+          </div>
+          <div class="input-group" style="flex:1;min-width:180px;margin-bottom:0">
+            <label>트랙킹 번호 컬럼</label>
+            <select id="tracking-col" style="width:100%;padding:13px 16px;border:1.5px solid #E8E2D8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;background:var(--warm-white);color:var(--dark);outline:none;cursor:pointer"></select>
+          </div>
+          <div class="input-group" style="flex:1;min-width:180px;margin-bottom:0">
+            <label>이름 컬럼 (선택사항)</label>
+            <select id="name-col" style="width:100%;padding:13px 16px;border:1.5px solid #E8E2D8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;background:var(--warm-white);color:var(--dark);outline:none;cursor:pointer">
+              <option value="">— 없음 —</option>
+            </select>
+          </div>
+        </div>
+        <div id="preview-rows" style="margin-top:16px;font-size:0.8rem;color:var(--light-mid)"></div>
+        <button class="btn-gold" style="margin-top:20px" onclick="saveChallenge()">챌린지 데이터 저장 →</button>
+      </div>
+    </div>
+
+    <!-- EXISTING CHALLENGES -->
+    <div class="section-card">
+      <h3>등록된 챌린지</h3>
+      <p class="section-desc">업로드된 모든 챌린지 데이터입니다. 크리에이터가 트랙킹 조회 페이지에서 검색할 수 있어요.</p>
+      <div class="challenge-list" id="admin-challenge-list">
+        <div class="empty-state"><div class="empty-icon">📦</div>No challenges uploaded yet</div>
+      </div>
+    </div>
+
+    <!-- CHANGE PASSWORD -->
+    <div class="section-card">
+      <h3>관리자 비밀번호 변경</h3>
+      <p class="section-desc">관리자 패널에 접근하는 비밀번호를 변경합니다.</p>
+      <div class="pw-row">
+        <div class="input-group">
+          <label>새 비밀번호</label>
+          <input type="password" id="new-pw" placeholder="새 비밀번호 입력" style="background:white">
+        </div>
+        <div class="input-group">
+          <label>비밀번호 확인</label>
+          <input type="password" id="confirm-pw" placeholder="비밀번호 재입력" style="background:white">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn-gold" onclick="changePassword()">비밀번호 변경</button>
+        <button class="btn-outline" onclick="adminLogout()">로그아웃</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== LOGO ==========
+const LOGO_B64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCARMBEwDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//Z';
+const LOGO_SRC = 'data:image/jpeg;base64,' + LOGO_B64;
+document.getElementById('nav-logo-img').src = LOGO_SRC;
+document.getElementById('login-logo-img').src = LOGO_SRC;
+
+// ========== STATE ==========
+const DEFAULT_PW = 'nuriglow2024';
+let state = {
+  challenges: [],   // { id, name, records: [{email, tracking, name}] }
+  adminPw: DEFAULT_PW,
+  adminLoggedIn: false,
+  selectedChallenge: null,
+  parsedFile: null,
+  parsedHeaders: [],
+  parsedRows: []
+};
+
+// ========== STORAGE ==========
+function save() {
+  try {
+    localStorage.setItem('nuriglow_challenges', JSON.stringify(state.challenges));
+    localStorage.setItem('nuriglow_pw', state.adminPw);
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const c = localStorage.getItem('nuriglow_challenges');
+    if (c) state.challenges = JSON.parse(c);
+    const p = localStorage.getItem('nuriglow_pw');
+    if (p) state.adminPw = p;
+  } catch(e) {}
+}
+
+// ========== PAGES ==========
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'creator') renderCreatorTabs();
+}
+
+function showAdmin() {
+  if (state.adminLoggedIn) {
+    showPage('admin');
+    renderAdminDashboard();
+  } else {
+    showPage('admin-login');
+    document.getElementById('login-hint').textContent =
+      state.adminPw === DEFAULT_PW ? '초기 비밀번호: nuriglow2024' : '';
+    setTimeout(() => document.getElementById('admin-pw-input').focus(), 100);
+  }
+}
+
+function adminLogin() {
+  const pw = document.getElementById('admin-pw-input').value;
+  if (pw === state.adminPw) {
+    state.adminLoggedIn = true;
+    document.getElementById('admin-pw-input').value = '';
+    showPage('admin');
+    renderAdminDashboard();
+    toast('환영합니다!', 'success');
+  } else {
+    toast('비밀번호가 올바르지 않습니다', 'error');
+    document.getElementById('admin-pw-input').select();
+  }
+}
+
+function adminLogout() {
+  state.adminLoggedIn = false;
+  showPage('creator');
+  toast('로그아웃 되었습니다');
+}
+
+// ========== CREATOR TABS ==========
+function renderCreatorTabs() {
+  const container = document.getElementById('creator-tabs');
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = '';
+  document.getElementById('email-input').value = '';
+
+  if (state.challenges.length === 0) {
+    container.innerHTML = '<div class="no-data-msg">No challenges available yet.<br>Please check back soon.</div>';
+    state.selectedChallenge = null;
+    return;
+  }
+
+  container.innerHTML = '';
+  state.challenges.forEach((ch, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'challenge-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = ch.name;
+    btn.onclick = () => {
+      document.querySelectorAll('.challenge-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.selectedChallenge = ch.id;
+      resultArea.innerHTML = '';
+    };
+    container.appendChild(btn);
+  });
+  state.selectedChallenge = state.challenges[0].id;
+}
+
+// ========== SEARCH ==========
+function searchTracking() {
+  const email = document.getElementById('email-input').value.trim().toLowerCase();
+  const resultArea = document.getElementById('result-area');
+
+  if (!email) { toast('Please enter your email address', 'error'); return; }
+  if (!email.includes('@') || !email.includes('.')) {
+    toast('Please enter a valid email address', 'error'); return;
+  }
+  if (!state.selectedChallenge) {
+    resultArea.innerHTML = '<div class="no-data-msg">No challenge selected or available.</div>'; return;
+  }
+
+  const challenge = state.challenges.find(c => c.id === state.selectedChallenge);
+  if (!challenge) { resultArea.innerHTML = '<div class="error-msg">Challenge data not found.</div>'; return; }
+
+  const record = challenge.records.find(r => r.email.toLowerCase() === email);
+
+  if (record) {
+    resultArea.innerHTML = `
+      <div class="result-card">
+        <div class="result-label">Tracking Number Found</div>
+        <div class="result-challenge">${challenge.name}</div>
+        <div class="result-tracking">${record.tracking}</div>
+        ${record.name ? `<div class="result-name">Creator: <strong>${record.name}</strong></div>` : ''}
+      </div>`;
+  } else {
+    resultArea.innerHTML = `
+      <div class="error-msg">
+        No tracking number found for <strong>${email}</strong> in <strong>${challenge.name}</strong>.<br>
+        Please ensure you enter your full email address exactly as registered.
+      </div>`;
+  }
+}
+
+// ========== FILE HANDLING ==========
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.match(/\.(xlsx|xls)$/i)) {
+    toast('엑셀 파일(.xlsx)만 업로드 가능합니다', 'error'); return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      if (!data || data.length < 2) { toast('파일이 비어있습니다', 'error'); return; }
+
+      const headers = data[0].map(String);
+      state.parsedHeaders = headers;
+      state.parsedRows = data.slice(1).filter(r => r.some(c => c !== ''));
+
+      // Show file tag
+      const preview = document.getElementById('file-preview');
+      preview.style.display = 'block';
+      preview.innerHTML = `<div class="file-tag">📄 ${file.name} · ${state.parsedRows.length}개 행 감지됨</div>`;
+
+      // Populate column selectors
+      const emailSel = document.getElementById('email-col');
+      const trackSel = document.getElementById('tracking-col');
+      const nameSel = document.getElementById('name-col');
+
+      [emailSel, trackSel].forEach(sel => { sel.innerHTML = ''; });
+      nameSel.innerHTML = '<option value="">— None —</option>';
+
+      headers.forEach((h, i) => {
+        const opt = (v, t) => `<option value="${v}">${t}</option>`;
+        emailSel.innerHTML += opt(i, h || `Column ${i+1}`);
+        trackSel.innerHTML += opt(i, h || `Column ${i+1}`);
+        nameSel.innerHTML += opt(i, h || `Column ${i+1}`);
+      });
+
+      // Auto-detect
+      const lower = headers.map(h => h.toLowerCase());
+      const emailIdx = lower.findIndex(h => h.includes('email'));
+      const trackIdx = lower.findIndex(h => h.includes('track') || h.includes('number') || h.includes('번호'));
+      const nameIdx = lower.findIndex(h => h.includes('name') || h.includes('이름'));
+      if (emailIdx >= 0) emailSel.value = emailIdx;
+      if (trackIdx >= 0) trackSel.value = trackIdx;
+      if (nameIdx >= 0) nameSel.value = nameIdx;
+
+      updatePreviewRows();
+      document.getElementById('col-mapper').style.display = 'block';
+
+      [emailSel, trackSel, nameSel].forEach(s => s.addEventListener('change', updatePreviewRows));
+
+    } catch(err) {
+      toast('파일을 읽을 수 없습니다. 다시 시도해주세요.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function updatePreviewRows() {
+  const ei = parseInt(document.getElementById('email-col').value);
+  const ti = parseInt(document.getElementById('tracking-col').value);
+  const ni = document.getElementById('name-col').value;
+  const preview = state.parsedRows.slice(0, 3);
+  const previewEl = document.getElementById('preview-rows');
+
+  if (preview.length === 0) { previewEl.innerHTML = ''; return; }
+
+  let html = '<div style="font-size:0.78rem;font-weight:500;color:var(--mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">미리보기 (상위 3행)</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px">';
+  preview.forEach(row => {
+    const email = row[ei] || '—';
+    const track = row[ti] || '—';
+    const name = ni !== '' ? (row[parseInt(ni)] || '') : '';
+    html += `<div style="display:flex;gap:12px;align-items:center;padding:8px 12px;background:var(--warm-white);border-radius:8px;border:1px solid var(--border)">
+      <span style="flex:1;font-size:0.78rem;color:var(--mid)">${email}</span>
+      <span style="font-size:0.78rem;font-weight:500;color:var(--dark)">${track}</span>
+      ${name ? `<span style="font-size:0.78rem;color:var(--light-mid)">${name}</span>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+  previewEl.innerHTML = html;
+}
+
+function saveChallenge() {
+  const name = document.getElementById('challenge-name-input').value.trim();
+  if (!name) { toast('챌린지 이름을 입력해주세요', 'error'); return; }
+  if (!state.parsedRows.length) { toast('저장할 데이터가 없습니다', 'error'); return; }
+
+  const ei = parseInt(document.getElementById('email-col').value);
+  const ti = parseInt(document.getElementById('tracking-col').value);
+  const niStr = document.getElementById('name-col').value;
+  const ni = niStr !== '' ? parseInt(niStr) : null;
+
+  const records = state.parsedRows
+    .map(row => ({
+      email: String(row[ei] || '').trim(),
+      tracking: String(row[ti] || '').trim(),
+      name: ni !== null ? String(row[ni] || '').trim() : ''
+    }))
+    .filter(r => r.email && r.tracking);
+
+  if (records.length === 0) { toast('유효한 데이터가 없습니다. 컬럼 매핑을 확인해주세요.', 'error'); return; }
+
+  const id = 'ch_' + Date.now();
+  state.challenges.push({ id, name, records });
+  save();
+
+  // Reset
+  document.getElementById('challenge-name-input').value = '';
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('col-mapper').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  state.parsedRows = [];
+  state.parsedHeaders = [];
+
+  renderAdminDashboard();
+  toast(`"${name}" 저장 완료 · ${records.length}개 크리에이터`, 'success');
+}
+
+// ========== ADMIN DASHBOARD ==========
+function renderAdminDashboard() {
+  const total = state.challenges.reduce((a, c) => a + c.records.length, 0);
+  document.getElementById('admin-data-summary').textContent =
+    `챌린지 ${state.challenges.length}개 · 총 ${total}명`;
+
+  const list = document.getElementById('admin-challenge-list');
+  if (state.challenges.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div>아직 업로드된 챌린지가 없습니다</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  state.challenges.forEach((ch, i) => {
+    const item = document.createElement('div');
+    item.className = 'challenge-item';
+    item.innerHTML = `
+      <div class="challenge-item-left">
+        <span class="ch-badge">#${i + 1}</span>
+        <div class="ch-info">
+          <h4>${ch.name}</h4>
+          <p>크리에이터 ${ch.records.length}명</p>
+        </div>
+      </div>
+      <button class="ch-delete" onclick="deleteChallenge('${ch.id}')">삭제</button>`;
+    list.appendChild(item);
+  });
+}
+
+function deleteChallenge(id) {
+  const ch = state.challenges.find(c => c.id === id);
+  if (!ch) return;
+  if (!confirm(`"${ch.name}"을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+  state.challenges = state.challenges.filter(c => c.id !== id);
+  save();
+  renderAdminDashboard();
+  toast('챌린지가 삭제되었습니다');
+}
+
+// ========== PASSWORD ==========
+function changePassword() {
+  const np = document.getElementById('new-pw').value;
+  const cp = document.getElementById('confirm-pw').value;
+  if (!np) { toast('새 비밀번호를 입력해주세요', 'error'); return; }
+  if (np.length < 6) { toast('비밀번호는 최소 6자 이상이어야 합니다', 'error'); return; }
+  if (np !== cp) { toast('비밀번호가 일치하지 않습니다', 'error'); return; }
+  state.adminPw = np;
+  save();
+  document.getElementById('new-pw').value = '';
+  document.getElementById('confirm-pw').value = '';
+  toast('비밀번호가 변경되었습니다', 'success');
+}
+
+// ========== TOAST ==========
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => el.className = 'toast', 2800);
+}
+
+// ========== INIT ==========
+load();
+
+// Pre-populate with Challenge #4 and #5 if no data
+if (state.challenges.length === 0) {
+  state.challenges = [
+    {
+      id: 'ch_4_default',
+      name: 'Challenge #4',
+      records: []
+    },
+    {
+      id: 'ch_5_default',
+      name: 'Challenge #5',
+      records: []
+    }
+  ];
+  // Don't save so admin can populate properly
+}
+
+renderCreatorTabs();
+</script>
+</body>
+</html>
